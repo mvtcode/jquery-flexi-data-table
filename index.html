@@ -3,9 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My jQuery Library Preview</title>
+  <title>jquery-flexi-data-table Library Preview</title>
   <link rel="stylesheet" href="dist/flexi-data-table.css">
+  <!-- <link rel="stylesheet" href="style.css"> -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" type="text/javascript"></script>
+  <script src="https://unpkg.com/sortablejs-make@1.0.1/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-sortablejs@latest/jquery-sortable.js"></script>
+  <!-- <script src="https://unpkg.com/@popperjs/core@2"></script> -->
   <!-- <script src="dist/flexi-data-table.min.js"></script> -->
   <script src="src/libs/index.js"></script>
   <style>
@@ -59,7 +63,7 @@
       padding: 5px;
     }
 
-    .box .column-out {
+    .box.column-out {
       height: 100px;
       padding: 10px;
     }
@@ -95,7 +99,7 @@
     <div class="grid-item">
       <h4 style="margin-bottom: 10px;">Actions log</h4>
       <div class="box column-out custom-scroll">
-        <pre id="log"></pre>
+        <pre id="cta-log"></pre>
       </div>
     </div>
   </div>
@@ -151,7 +155,7 @@
         vfActualFieldTitle: 'Tuổi',
       },
       {
-        vfTitle: 'Giới tính',
+        vfTitle: 'Giới tính', 
         vfCode: 'gender',
         vfType: VfType.DATA,
         vfAcutalField: 'gender',
@@ -443,10 +447,11 @@
       const txtTemplateColumns = $('#txtTemplateColumns');
       const txtTableData = $('#txtTableData');
       const columnOut = $('#columnOut');
+      const ctaLog = $('#cta-log');
 
       txtTemplateColumns.val(JSON.stringify(vfFields, null, 2));
       txtTableData.val(JSON.stringify(data, null, 2));
-      columnOut.html(JSON.stringify(columns));
+      columnOut.text(JSON.stringify(columns));
 
       const table = $('#table').flexiTable({
         columns,
@@ -455,7 +460,7 @@
         height: 300,
         fixed: true,
         onCta: function (action, row, index) {
-          console.log(action, row, index);
+          ctaLog.append(`Event: ${action} | index: ${index} | id: ${row.id}\n`);
         }
       });
 
@@ -465,6 +470,14 @@
         actions,
         vfFields,
         height: 390,
+      });
+
+      tableEdit.addEventListener('change', (newColumns) => {
+        console.log(newColumns);
+        table.setColumns(newColumns);
+        table.reload();
+
+        columnOut.text(JSON.stringify(newColumns));
       });
 
       txtTemplateColumns.change(function() {
