@@ -130,10 +130,9 @@
     }
   }
 
-  function swapArrayElements(arr, oldIndex, newIndex) {
-    const temp = arr[oldIndex];
-    arr[oldIndex] = arr[newIndex];
-    arr[newIndex] = temp;
+  function moveArrayElement(arr, oldIndex, newIndex) {
+    const elementToMove = arr.splice(oldIndex, 1)[0];
+    arr.splice(newIndex, 0, elementToMove);
     return arr;
   }
 
@@ -251,6 +250,12 @@
           div.html(getValue(row, column, index, mapFieldInfo));
           td.append(div);
           tr.append(td);
+          
+          td.css('text-align', column.align || 'left');
+          td.css('vertical-align', column.vAlign || 'top');
+          column.width && td.css('width', column.width);
+          column.minWidth && td.css('min-width', column.minWidth);
+          column.maxWidth && td.css('max-width', column.maxWidth);
         }
         body.append(tr);
       }
@@ -375,6 +380,7 @@
       this.disabled = false;
       // this.onChange = null;
       this.mapFunction = {}; // {[event: string]: Function[]};
+      this.currentRow = -1;
 
       this.btnPlus = divContent.find('.btn-plus');
       this.listColumns = divContent.find('.list-columns');
@@ -428,11 +434,11 @@
         this.addColumn();
       });
 
-      this.listColumns.sortable({
+      const sortable = this.listColumns.sortable({
         handle: '.handle',
         // invertSwap: true,
-        onChange: (e => {
-          this.columns = swapArrayElements(this.columns, e.oldIndex, e.newIndex);
+        onEnd: (e => {
+          this.columns = moveArrayElement(this.columns, e.oldIndex, e.newIndex);
           this.emit('change');
         }),
       });
@@ -509,46 +515,43 @@
           <div class="label align-items-center drop-zone">
             <div class="align-items-center">
               <span class="handle">☰</span>
-              <!--<Popper placement="right-start" arrow class="popper-wrapper">-->
-                <button class="btn-more" :disabled="disabled">⋯</button>
-                <template #content>
-                  <div class="popover-action">
-                    <div>
-                      <button class="btn-more" :class="{active: (element.align || 'left') === 'left'}" @click="element.align = 'left'">
-                        <img :src="AlignLeftIcon" />
-                      </button>
-                      <button class="btn-more" :class="{active: element.align === 'center'}" @click="element.align = 'center'">
-                        <img :src="AlignCenterIcon" />
-                      </button>
-                      <button class="btn-more" :class="{active: element.align === 'right'}" @click="element.align = 'right'">
-                        <img :src="AlignRightIcon" />
-                      </button>
-                    </div>
-                    <div style="margin-top: 4px">
-                      <button class="btn-more" :class="{active: element.vAlign === 'top'}" @click="element.vAlign = 'top'">
-                        <img :src="VerticalAlignTopIcon" />
-                      </button>
-                      <button class="btn-more" :class="{active: (element.vAlign || 'middle') === 'middle'}" @click="element.vAlign = 'middle'">
-                        <img :src="VerticalAlignCenterIcon" />
-                      </button>
-                      <button class="btn-more" :class="{active: element.vAlign === 'bottom'}" @click="element.vAlign = 'bottom'">
-                        <img :src="VerticalAlignBottomIcon" />
-                      </button>
-                    </div>
-
-                    <div style="margin-top: 4px" class="div-input">
-                      <label class="label">width:</label> <input type="text" v-model="element.width" placeholder="# px | %"/>
-                    </div>
-                    <div style="margin-top: 4px" class="div-input">
-                      <label class="label">min-width:</label> <input type="text" v-model="element.minWidth" placeholder="# px | %"/>
-                    </div>
-                    <div style="margin-top: 4px" class="div-input">
-                      <label class="label">max-width:</label> <input type="text" v-model="element.maxWidth" placeholder="# px | %"/>
-                    </div>
+              <div class="inline-block popper-wrapper">
+                <button class="btn-more btn-popover">⋯</button>
+                <div class="popover-action popover-content">
+                  <div>
+                    <button class="btn-more btn-align-left">
+                      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTcgMTBIM00yMSA2SDNNMjEgMTRIM00xNyAxOEgzIi8+PC9zdmc+" />
+                    </button>
+                    <button class="btn-more btn-align-center">
+                      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiI+PHBhdGggZD0iTTEyIDI4aDcyYTQgNCAwIDAgMCAwLThIMTJhNCA0IDAgMCAwIDAgOHptOCA4YTQgNCAwIDAgMCAwIDhoNTZhNCA0IDAgMCAwIDAtOEgyMHptNjQgMTZIMTJhNCA0IDAgMCAwIDAgOGg3MmE0IDQgMCAwIDAgMC04em0tOCAxNkgyMGE0IDQgMCAwIDAgMCA4aDU2YTQgNCAwIDAgMCAwLTh6Ii8+PC9zdmc+" />
+                    </button>
+                    <button class="btn-more btn-align-right">
+                      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiI+PHBhdGggZD0iTTg4IDI0YTQgNCAwIDAgMC00LTRIMTJhNCA0IDAgMCAwIDAgOGg3MmE0IDQgMCAwIDAgNC00em0wIDE2YTQgNCAwIDAgMC00LTRIMjhhNCA0IDAgMCAwIDAgOGg1NmE0IDQgMCAwIDAgNC00ek04IDU2YTQgNCAwIDAgMCA0IDRoNzJhNCA0IDAgMCAwIDAtOEgxMmE0IDQgMCAwIDAtNCA0em0xNiAxNmE0IDQgMCAwIDAgNCA0aDU2YTQgNCAwIDAgMCAwLThIMjhhNCA0IDAgMCAwLTQgNHoiLz48L3N2Zz4=" />
+                    </button>
                   </div>
-                  <div></div>
-                </template>
-              <!--</Popper>-->
+                  <div style="margin-top: 4px">
+                    <button class="btn-more btn-valign-top">
+                      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNOCAxMWgzdjEwaDJWMTFoM2wtNC00LTQgNHpNNCAzdjJoMTZWM0g0eiIvPjwvc3ZnPg==" />
+                    </button>
+                    <button class="btn-more btn-valign-middle">
+                      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNOCAxOWgzdjRoMnYtNGgzbC00LTQtNCA0em04LTE0aC0zVjFoLTJ2NEg4bDQgNCA0LTR6TTQgMTF2MmgxNnYtMkg0eiIvPjwvc3ZnPg==" />
+                    </button>
+                    <button class="btn-more btn-valign-bottom">
+                      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNMTYgMTNoLTNWM2gtMnYxMEg4bDQgNCA0LTR6TTQgMTl2MmgxNnYtMkg0eiIvPjwvc3ZnPg==" />
+                    </button>
+                  </div>
+                  <div style="margin-top: 4px" class="div-input">
+                    <label class="label">width:</label> <input type="text" class="txt-width" placeholder="# px | %"/>
+                  </div>
+                  <div style="margin-top: 4px" class="div-input">
+                    <label class="label">min-width:</label> <input type="text" class="min-width" placeholder="# px | %"/>
+                  </div>
+                  <div style="margin-top: 4px" class="div-input">
+                    <label class="label">max-width:</label> <input type="text" class="max-width" placeholder="# px | %"/>
+                  </div>
+                  <div class="popper-arrow"></div>
+                </div>
+              </div>
               
               <input class="input-title" type="text" placeholder="Column name"/>
             </div>
@@ -577,7 +580,144 @@
       const listFields = li.find('.list-selected-field');
       const btnClose = li.find('.btn-close');
 
+      const btnPopover = li.find('.btn-popover');
+      const contentPopover = li.find('.popover-content');
+      btnPopover.webuiPopover({
+        url: contentPopover,
+        trigger:'click',
+        placement: 'right',
+      });
+      contentPopover.click(function(e) {
+        e.preventDefault();
+        return false;
+      });
+
+      const btnAlignLeft = li.find('button.btn-align-left');
+      const btnAlignCenter = li.find('button.btn-align-center');
+      const btnAlignRight = li.find('button.btn-align-right');
+      const btnValignTop = li.find('button.btn-valign-top');
+      const btnValignMiddle = li.find('button.btn-valign-middle');
+      const btnValignBottom = li.find('button.btn-valign-bottom');
+      const txtWidth = li.find('.txt-width');
+      const txtMinWidth = li.find('.min-width');
+      const txtMaxWidth = li.find('.max-width');
+
       inputTitle.val(column.title);
+
+      switch(column.align || 'left') {
+        case 'left':
+          btnAlignLeft.addClass('active');
+          break;
+        case 'center':
+          btnAlignCenter.addClass('active');
+          break;
+        case 'right':
+          btnAlignRight.addClass('active');
+          break;
+      }
+
+      switch(column.vAlign || 'top') {
+        case 'top':
+          btnValignTop.addClass('active');
+          break;
+        case 'middle':
+          btnValignMiddle.addClass('active');
+          break;
+        case 'bottom':
+          btnValignBottom.addClass('active');
+          break;
+      }
+
+      column.width && txtWidth.val(column.width);
+      column.minWidth && txtMinWidth.val(column.minWidth);
+      column.maxWidth && txtMaxWidth.val(column.maxWidth);
+
+      btnPopover.click(function() {
+        const btn = $(this);
+        const li = btn.parent().parent().parent().parent();
+        const index = self.listColumns.find('li.list-group-item').index(li);
+        self.currentRow = index;
+      });
+
+      btnAlignLeft.click(function() {
+        const btn = $(this);
+        if(self.currentRow >= -1 && self.columns[self.currentRow]) {
+          self.columns[self.currentRow].align = 'left';
+          btn.parent().find('.active').removeClass('active');
+          btn.addClass('active');
+          self.emit('change');
+        }
+      });
+      btnAlignCenter.click(function() {
+        const btn = $(this);
+        if(self.currentRow >= -1 && self.columns[self.currentRow]) {
+          self.columns[self.currentRow].align = 'center';
+          btn.parent().find('.active').removeClass('active');
+          btn.addClass('active');
+          self.emit('change');
+        }
+      });
+      btnAlignRight.click(function() {
+        const btn = $(this);
+        if(self.currentRow >= -1 && self.columns[self.currentRow]) {
+          self.columns[self.currentRow].align = 'right';
+          btn.parent().find('.active').removeClass('active');
+          btn.addClass('active');
+          self.emit('change');
+        }
+      });
+
+      btnValignTop.click(function() {
+        const btn = $(this);
+        if(self.currentRow >= -1 && self.columns[self.currentRow]) {
+          self.columns[self.currentRow].vAlign = 'top';
+          btn.parent().find('.active').removeClass('active');
+          btn.addClass('active');
+          self.emit('change');
+        }
+      });
+      btnValignMiddle.click(function() {
+        const btn = $(this);
+        if(self.currentRow >= -1 && self.columns[self.currentRow]) {
+          self.columns[self.currentRow].vAlign = 'middle';
+          btn.parent().find('.active').removeClass('active');
+          btn.addClass('active');
+          self.emit('change');
+        }
+      });
+      btnValignBottom.click(function() {
+        const btn = $(this);
+        if(self.currentRow >= -1 && self.columns[self.currentRow]) {
+          self.columns[self.currentRow].vAlign = 'bottom';
+          btn.parent().find('.active').removeClass('active');
+          btn.addClass('active');
+          self.emit('change');
+        }
+      });
+
+      txtWidth.change(function() {
+        const txt = $(this);
+        if(self.currentRow >= -1 && self.columns[self.currentRow]) {
+          self.columns[self.currentRow].width = txt.val();
+          self.emit('change');
+        }
+      });
+
+      txtMinWidth.change(function() {
+        const txt = $(this);
+        if(self.currentRow >= -1 && self.columns[self.currentRow]) {
+          self.columns[self.currentRow].minWidth = txt.val();
+          self.emit('change');
+        }
+      });
+      
+      txtMaxWidth.change(function() {
+        const txt = $(this);
+        if(self.currentRow >= -1 && self.columns[self.currentRow]) {
+          self.columns[self.currentRow].maxWidth = txt.val();
+          self.emit('change');
+        }
+      });
 
       const addItemToFields = (vfCode) => {
         const fieldInfo = self.mapFieldInfo[vfCode];
