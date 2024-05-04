@@ -239,6 +239,7 @@
       this.table.append(thead);
       return this;
     };
+
     Flexi.prototype.drawBody = function() {
       const body = $('<tbody></tbody>')
   
@@ -811,7 +812,286 @@
       e.originalEvent.dataTransfer.setData("text", JSON.stringify(field));
     }
 
+    Edit.prototype.setColumns = function (columns) {
+      this.columns = columns;
+      this.listColumns.empty();
+      this.drawColumns();
+    }
+
     const edit = new Edit();
     return edit;
   };
+
+  /*
+    vfFields: VfField[];
+    actions: VfField[];
+    icons: VfField[];
+    height?: number;
+    disabled?: boolean;
+    isShowLayout?: boolean;
+    isShowOption?: boolean;
+    layouts: [{
+      title: string;
+      id: UUID;
+      isSystem: boolean;
+      columns: Column[];
+    }]
+  */
+  $.fn.flexiTableFull = function({data = [], vfFields = [], actions = [], icons = [], tableHeight = 300, tableFixed = false, editHeight = 390, layouts = [], isShowLayout = true, isShowOption = true, onCta, onDeleteLayout, onSaveLayout, onSetDefaultLayout}) {
+    const containers = $(this);
+    containers.addClass('flexi-table-full');
+
+    function TableFull() {
+      this.layouts = layouts;
+      this.data = data;
+
+      this.objEdit = {
+        tablePreview: null,
+        tableEdit: null,
+        layoutsEdit: [],
+        popupEdit: null,
+        ddlLayoutEdit: null,
+        btnClone: null,
+        btnDelete: null,
+        btnSave: null,
+        btnDefault: null,
+        btnCopy: null,
+      };
+
+      this.layoutId = layouts?.length > 0 ? layouts[0].id : '';
+      this.layoutIndex = 0;
+      this.ddl = null;
+      this.btnOption = null;
+      this.objTableMain = null;
+
+      this.drawHeader();
+      this.drawTable();
+    };
+
+    TableFull.prototype.drawHeader = function () {
+      const self = this;
+      if (isShowLayout || isShowOption) {
+        const divHeader = $('<div class="justify-content-space-between" style="margin-bottom: 8px;"></div>');
+        const divLeft = $('<div class="align-items-center"></div>');
+        divHeader.append(divLeft);
+  
+        if (isShowLayout) {
+          divLeft.append('<h4>Layout:</h4>');
+          const ddl = $('<select class="select-layout" placeholder="Chọn layout"></select>');
+          divLeft.append(ddl);
+          self.ddl =ddl;
+  
+          if (self.layouts.length > 0) {
+            for(const layout of self.layouts) {
+              ddl.append(`<option value="${layout.id}">${layout.title}</option>`);
+            }
+          }
+
+          ddl.change(function() {
+            const value = $(this).val();
+            self.changeLayout(value);
+          });
+        }
+  
+        if (isShowOption) {
+          const btnOptopn = $('<button class="btn-option">🛠</button>');
+          divHeader.append(btnOptopn);
+          self.btnOption = btnOptopn;
+          self.drawPopup();
+          btnOptopn.click(function() {
+            self.showPopupEdit();
+          });
+        }
+  
+        containers.append(divHeader);
+      }
+    };
+
+    TableFull.prototype.drawTable = function () {
+      const self = this;
+      const divTable = $('<div></div>');
+      containers.append(divTable);
+
+      self.objTableMain = divTable.flexiTable({
+        columns: self.layouts?.length > 0 ? self.layouts[0].columns : [],
+        templates: [...vfFields, ...icons, ...actions],
+        data,
+        height: tableHeight,
+        fixed: tableFixed,
+        onCta: function (action, row, index) {
+          onCta(action, row, index);
+        }
+      });
+    };
+
+    TableFull.prototype.changeLayout = function (layoutId) {
+      const index = this.layouts.findIndex(layout => layout.id === layoutId);
+      const newColumns = this.layouts[index].columns;
+      this.objTableMain.setColumns(newColumns);
+      this.objTableMain.reload();
+    }
+
+    TableFull.prototype.drawPopup = function () {
+      const self = this;
+      self.objEdit.popupEdit = $(`
+        <div class="popup-edit-wrapper">
+          <div class="popup-content">
+            <div class="justify-content-space-between" style="margin-bottom: 10px">
+              <h3>[Nâng cao] Cấu hình cách hiển thị bảng dữ liệu</h3>
+              <button class="btn-close"> ❌ </button>
+            </div>
+
+            <div class="table-preview"></div>
+
+            <div class="align-items-center">
+              <h4>Tên layout:</h4>
+              <select class="select-layout"></select>
+
+              <button class="btn-clone">Clone</button>
+              <button class="btn-delete">Xóa</button>
+              <button class="btn-save">Lưu</button>
+              <button class="btn-default">Default</button>
+              <button class="btn-copy">Copy</button>
+            </div>
+
+            <div class="table-edit"></div>
+          </div>
+        </div>
+      `);
+      containers.after(self.objEdit.popupEdit);
+
+      self.objEdit.popupEdit.find('.btn-close').click(function() {
+        self.objEdit.popupEdit.css('display', 'none');
+      });
+
+      const tablePreview = self.objEdit.popupEdit.find('.table-preview');
+      self.objEdit.ddlLayoutEdit = self.objEdit.popupEdit.find('.select-layout');
+      self.objEdit.btnClone = self.objEdit.popupEdit.find('.btn-clone');
+      self.objEdit.btnDelete = self.objEdit.popupEdit.find('.btn-delete');
+      self.objEdit.btnSave = self.objEdit.popupEdit.find('.btn-save');
+      self.objEdit.btnDefault = self.objEdit.popupEdit.find('.btn-default');
+      self.objEdit.btnCopy = self.objEdit.popupEdit.find('.btn-copy');
+      const tableEdit = self.objEdit.popupEdit.find('.table-edit');
+
+      self.objEdit.tablePreview = tablePreview.flexiTable({
+        columns: self.layouts?.length > 0 ? self.layouts[0].columns : [],
+        templates: [...vfFields, ...icons, ...actions],
+        data: self.data,
+        height: 300,
+        fixed: true,
+        onCta: function (action, row, index) {
+          console.log(action, row, index);
+        }
+      });
+
+      self.objEdit.tableEdit = tableEdit.flexiTableEdit({
+        columns: [],
+        icons,
+        actions,
+        vfFields,
+        height: editHeight,
+      });
+
+      self.objEdit.tableEdit.addEventListener('change', (newColumns) => {
+        const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
+        self.objEdit.tablePreview.setColumns(newColumns);
+        self.objEdit.tablePreview.reload();
+
+        self.objEdit.layoutsEdit[index].columns = newColumns;
+      });
+
+      self.objEdit.ddlLayoutEdit.change(function() {
+        const index = this.selectedIndex;
+        const newColumns = self.objEdit.layoutsEdit[index].columns;
+        self.objEdit.tablePreview.setColumns(newColumns);
+        self.objEdit.tablePreview.reload();
+
+        self.objEdit.tableEdit.setColumns(newColumns);
+
+        self.objEdit.btnDelete.attr('disabled', self.objEdit.layoutsEdit[index].isSystem);
+        self.objEdit.btnSave.attr('disabled', self.objEdit.layoutsEdit[index].isSystem);
+        self.objEdit.btnCopy.attr('disabled', self.objEdit.layoutsEdit[index].isSystem);
+        self.objEdit.btnDefault.attr('disabled', !self.objEdit.layoutsEdit[index].id);
+      });
+
+      self.objEdit.btnClone.click(() => {
+        const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
+        const layout = self.objEdit.layoutsEdit[index];
+        const newLayout = {
+          title: `${layout.title} clone`,
+          id: '',
+          isSystem: false,
+          isDefault: false,
+          columns: JSON.parse(
+            JSON.stringify(self.objEdit.layoutsEdit[index].columns)
+          ),
+        }
+        self.objEdit.layoutsEdit.push(newLayout);
+        self.objEdit.ddlLayoutEdit.append(`<option value="${newLayout.id}">${newLayout.title}</option>`);
+        self.objEdit.ddlLayoutEdit[0].selectedIndex = self.objEdit.layoutsEdit.length - 1;
+        self.objEdit.ddlLayoutEdit.trigger('change');
+      });
+
+      self.objEdit.btnDelete.click(() => {
+        if(confirm('Bạn muốn xóa layout này không?')) {
+          const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
+
+          const delUI = () => {
+            self.objEdit.layoutsEdit.splice(index, 1);
+            self.objEdit.ddlLayoutEdit.find('option').eq(index).remove();
+            self.objEdit.ddlLayoutEdit.trigger('change');
+          }
+          
+          if (!!self.objEdit.layoutsEdit[index].id && onDeleteLayout) {
+            onDeleteLayout(self.objEdit.layoutsEdit[index], () => {
+              delUI();
+            });
+          } else {
+            delUI();
+          }
+        }
+      });
+
+      self.objEdit.btnSave.click(() => {
+        const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
+        if (onSaveLayout) {
+          onSaveLayout(self.objEdit.layoutsEdit[index], (id) => {
+            self.objEdit.layoutsEdit[index].id = id;
+            self.objEdit.ddlLayoutEdit.trigger('change');
+          });
+        }
+      });
+
+      self.objEdit.btnDefault.click(() => {
+        const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
+        if (onSetDefaultLayout) {
+          onSetDefaultLayout(self.objEdit.layoutsEdit[index]);
+        }
+      });
+
+      self.objEdit.btnCopy.click(async () => {
+        const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
+        try {
+          await navigator.clipboard.writeText(JSON.stringify(self.objEdit.layoutsEdit[index].columns));
+          console.log('Copied');
+        } catch (e) {
+          console.error('Copy not support');
+        }
+      });
+    };
+
+    TableFull.prototype.showPopupEdit = function () {
+      const self = this;
+      self.objEdit.popupEdit?.css('display', 'block');
+
+      self.objEdit.layoutsEdit = JSON.parse(JSON.stringify(self.layouts));
+      self.objEdit.ddlLayoutEdit.empty();
+      for(const layout of self.objEdit.layoutsEdit) {
+        self.objEdit.ddlLayoutEdit.append(`<option value="${layout.id}">${layout.title}</option>`);
+      }
+      self.objEdit.ddlLayoutEdit.trigger('change');
+    };
+
+    return new TableFull();
+  }
 })( jQuery );

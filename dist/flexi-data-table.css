@@ -366,4 +366,57 @@ ul.list-group li.list-group-item .btn + .btn {
   width: 20px;
 }
 
+.flexi-table-full h4 {
+  margin: 0;
+  font-size: 14px;
+}
+.flexi-table-full .select-layout {
+  margin-left: 10px;
+  width: 200px;
+  outline: none;
+  border: 1px solid #AAA;
+  border-radius: 2px;
+}
+.flexi-table-full .btn-option {
+  outline: none;
+  border: 1px solid #AAA;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.popup-edit-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+}
+.popup-edit-wrapper .popup-content {
+  background: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+  margin: 20px auto;
+  width: 90%;
+}
+.popup-edit-wrapper .popup-content h3 {
+  margin: 0;
+}
+.popup-edit-wrapper .popup-content .btn-close {
+  border: none;
+  outline: none;
+  background-color: transparent;
+  cursor: pointer;
+}
+.popup-edit-wrapper .popup-content .select-layout {
+  width: 150px;
+  margin-left: 10px;
+}
+.popup-edit-wrapper .popup-content button {
+  margin-left: 10px;
+  cursor: pointer;
+}
+
 /*# sourceMappingURL=flexi-data-table.css.map */
