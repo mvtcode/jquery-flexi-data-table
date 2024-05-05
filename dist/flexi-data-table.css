@@ -1,15 +1,3 @@
-:root {
-  --popper-theme-background-color: #ffffff;
-  --popper-theme-background-color-hover: #ffffff;
-  --popper-theme-text-color: #333333;
-  --popper-theme-border-width: 1px;
-  --popper-theme-border-style: solid;
-  --popper-theme-border-color: #eeeeee;
-  --popper-theme-border-radius: 6px;
-  --popper-theme-padding: 10px;
-  --popper-theme-box-shadow: 0 6px 30px -6px rgba(0, 0, 0, 0.25);
-}
-
 .dynamic-table {
   width: 100%;
   margin: 0;
@@ -417,6 +405,20 @@ ul.list-group li.list-group-item .btn + .btn {
 .popup-edit-wrapper .popup-content button {
   margin-left: 10px;
   cursor: pointer;
+}
+.popup-edit-wrapper .popup-content .version {
+  color: #555;
+  font-size: 13px;
+}
+
+.popover-save {
+  display: none;
+}
+.popover-save .txt-layout-name {
+  outline: none;
+}
+.popover-save button + button {
+  margin-left: 4px;
 }
 
 /*# sourceMappingURL=flexi-data-table.css.map */

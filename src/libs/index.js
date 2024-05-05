@@ -1,4 +1,13 @@
+/**
+ * AUth: tanmv
+ * email: tanmv@mpos.vn
+ * version: 0.2.0-jquery
+ * created: 2024-03-19
+ * last update: 2025-05-05
+ */
+
 (function( $ ){
+  const version = '0.2.0-jquery';
   const prefixFunction = 'tdac';
 
   const VfType = {
@@ -134,6 +143,14 @@
     const elementToMove = arr.splice(oldIndex, 1)[0];
     arr.splice(newIndex, 0, elementToMove);
     return arr;
+  }
+
+  function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   }
 
   /*
@@ -315,7 +332,7 @@
         <div class="justify-content-space-between">
           <h5> Columns </h5>
           <div>
-            <button class="btn-plus" :disabled="disabled" @click="onAddColumn">✚</button>
+            <button class="btn-plus">✚</button>
           </div>
         </div>
         <hr style="margin: 5px 0"/>
@@ -327,12 +344,6 @@
         <h5>Fields</h5>
         <hr style="margin: 5px 0"/>
           <ul class="list-field custom-scroll list-fields">
-            <!--
-              <li v-for="field in listFields" :key="field.field">
-                <div class="label">{{ field.title }}:</div>
-                <div class="item" draggable="true" @dragstart="e => onDragstart(e, vfield)" v-for="vfield in field.variants" :key="vfield.vfCode"> {{ vfield.vfTitle }} </div>
-              </li>
-            -->
           </ul>
       </div>
 
@@ -341,11 +352,6 @@
           <h5>Separator</h5>
           <hr style="margin: 5px 0"/>
           <ul class="list-field-symbol list-separators">
-            <!--
-              <li v-for="field in symbols" :key="field.vfAcutalField">
-                <div class="item" draggable="true" @dragstart="e => onDragstart(e, field)"> {{ field.vfTitle }} </div>
-              </li>
-            -->
           </ul>
         </div>
 
@@ -353,11 +359,6 @@
           <h5>Actions</h5>
           <hr style="margin: 5px 0"/>
           <ul class="list-field-symbol list-actions">
-            <!--
-              <li v-for="field in actions" :key="field.vfAcutalField">
-                <div class="item btn" draggable="true" @dragstart="e => onDragstart(e, field)"> {{ field.vfTitle }} </div>
-              </li>
-            -->
           </ul>
         </div>
         
@@ -365,11 +366,6 @@
           <h5>Icons</h5>
           <hr style="margin: 5px 0"/>
           <ul class="list-field-symbol list-icons">
-            <!--
-              <li v-for="field in icons" :key="field.vfAcutalField">
-                <img :src="field.value" class="icon" draggable="true" @dragstart="e => onDragstart(e, field)"/>
-              </li>
-            -->
           </ul>
         </div>
       </div>
@@ -557,17 +553,10 @@
               <input class="input-title" type="text" placeholder="Column name"/>
             </div>
             <ul class="list-selected-field">
-              <!--
-              <li v-for="vfCode in element.fieldCodes" :key="vfCode">
-                <img v-if="mapFieldInfo[vfCode]?.vfType === VfType.ICON" class="icon-selected":src="mapFieldInfo[vfCode]?.value" />
-                <span v-else>{{ mapFieldInfo[vfCode]?.vfTitle }}</span>
-              </li>
-              <li class="no-data">Kéo field vào đây</li>
-              -->
             </ul>
           </div>
           <div>
-            <button class="btn btn-close" @click.stop="closeIndex(index)" :disabled="disabled">
+            <button class="btn btn-close">
               ✘
             </button>
           </div>
@@ -785,14 +774,15 @@
         const btn = $(this);
         const li = btn.parent().parent();
         const index = self.listColumns.find('li.list-group-item').index(li);
+
         if (self.columns[index].fieldCodes.length > 0) {
           self.columns[index].fieldCodes.length = 0;
-          div.find('.list-selected-field').empty().append(`<li class="no-data">Kéo field vào đây</li>`);
+          li.find('.list-selected-field').empty().append(`<li class="no-data">Kéo field vào đây</li>`);
         } else {
           self.columns.splice(index, 1);
           self.listColumns.find('li.list-group-item').eq(index).remove();
         }
-        this.emit('change');
+        self.emit('change');
       });
     }
 
@@ -837,7 +827,7 @@
       columns: Column[];
     }]
   */
-  $.fn.flexiTableFull = function({data = [], vfFields = [], actions = [], icons = [], tableHeight = 300, tableFixed = false, editHeight = 390, layouts = [], isShowLayout = true, isShowOption = true, onCta, onDeleteLayout, onSaveLayout, onSetDefaultLayout}) {
+  $.fn.flexiTableFull = function({data = [], vfFields = [], actions = [], icons = [], tableHeight = 300, tableFixed = false, editHeight = 390, layouts = [], defaultId = '', isShowLayout = true, isShowOption = true, onCta, onDeleteLayout, onSaveLayout, onSetDefaultLayout, onCopy}) {
     const containers = $(this);
     containers.addClass('flexi-table-full');
 
@@ -856,6 +846,12 @@
         btnSave: null,
         btnDefault: null,
         btnCopy: null,
+
+        popupSave: {
+          txtLayoutName: null,
+          btnCancel: null,
+          btnOk: null,
+        }
       };
 
       this.layoutId = layouts?.length > 0 ? layouts[0].id : '';
@@ -866,6 +862,12 @@
 
       this.drawHeader();
       this.drawTable();
+
+      const indexLayout = this.layouts.findIndex(leyout => leyout.id === defaultId);
+      if (indexLayout >= 0) {
+        this.ddl[0].selectedIndex = indexLayout;
+        this.changeLayout(defaultId);
+      }
     };
 
     TableFull.prototype.drawHeader = function () {
@@ -915,7 +917,7 @@
       self.objTableMain = divTable.flexiTable({
         columns: self.layouts?.length > 0 ? self.layouts[0].columns : [],
         templates: [...vfFields, ...icons, ...actions],
-        data,
+        data: self.data,
         height: tableHeight,
         fixed: tableFixed,
         onCta: function (action, row, index) {
@@ -924,7 +926,24 @@
       });
     };
 
+    TableFull.prototype.setData = function (data) {
+      this.data = data;
+      self.objTableMain.setData(data);
+      self.objTableMain.reload();
+    };
+
+    TableFull.prototype.setLayouts = function (layouts) {
+      this.layouts = layouts;
+      this.ddl.empty();
+      if (this.layouts.length > 0) {
+        for(const layout of this.layouts) {
+          this.ddl.append(`<option value="${layout.id}">${layout.title}</option>`);
+        }
+      }
+    };
+
     TableFull.prototype.changeLayout = function (layoutId) {
+      this.ddl.val(layoutId);
       const index = this.layouts.findIndex(layout => layout.id === layoutId);
       const newColumns = this.layouts[index].columns;
       this.objTableMain.setColumns(newColumns);
@@ -943,18 +962,32 @@
 
             <div class="table-preview"></div>
 
-            <div class="align-items-center">
-              <h4>Tên layout:</h4>
-              <select class="select-layout"></select>
-
-              <button class="btn-clone">Clone</button>
-              <button class="btn-delete">Xóa</button>
-              <button class="btn-save">Lưu</button>
-              <button class="btn-default">Default</button>
-              <button class="btn-copy">Copy</button>
+            <div class="justify-content-space-between">
+              <div class="align-items-center">
+                <h4>Tên layout:</h4>
+                <select class="select-layout"></select>
+                <button class="btn-clone">Clone</button>
+                <button class="btn-delete">Xóa</button>
+                <button class="btn-save">Lưu</button>
+                <button class="btn-default">Default</button>
+                <button class="btn-copy">Copy</button>
+              </div>
+              <div class="version">
+                version: ${version}
+              </div>
             </div>
 
             <div class="table-edit"></div>
+
+            <div class="popover-save">
+              <div>
+                <input class="txt-layout-name" type="text"/>
+              </div>
+              <div class="justify-content-end" style="margin-top: 4px">
+                <button class="btn-cancel">Hủy</button>
+                <button class="btn-save-confirm">OK</button>
+              </div>
+            </div>
           </div>
         </div>
       `);
@@ -973,10 +1006,15 @@
       self.objEdit.btnCopy = self.objEdit.popupEdit.find('.btn-copy');
       const tableEdit = self.objEdit.popupEdit.find('.table-edit');
 
+      const popoverSave = self.objEdit.popupEdit.find('.popover-save');
+      self.objEdit.popupSave.txtLayoutName = self.objEdit.popupEdit.find('.txt-layout-name');
+      self.objEdit.popupSave.btnCancel = self.objEdit.popupEdit.find('.btn-cancel');
+      self.objEdit.popupSave.btnOk = self.objEdit.popupEdit.find('.btn-save-confirm');
+
       self.objEdit.tablePreview = tablePreview.flexiTable({
         columns: self.layouts?.length > 0 ? self.layouts[0].columns : [],
         templates: [...vfFields, ...icons, ...actions],
-        data: self.data,
+        data: [],
         height: 300,
         fixed: true,
         onCta: function (action, row, index) {
@@ -1052,15 +1090,54 @@
         }
       });
 
+      // popover save
+      const popSave = self.objEdit.btnSave.webuiPopover({
+        url: popoverSave,
+        trigger:'click',
+        placement: 'bottom',
+      });
+
       self.objEdit.btnSave.click(() => {
         const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
+        self.objEdit.popupSave.txtLayoutName.val(self.objEdit.layoutsEdit[index].title);
+        setTimeout(() => {
+          self.objEdit.popupSave.txtLayoutName.focus();
+        }, 200);
+      });
+
+      self.objEdit.popupSave.txtLayoutName.keypress(function(event) {
+        const keyCode = event.which;
+        if (keyCode !== 13) return true;
+        const value = $(this).val().trim();
+        if (!value) return true;
+        event.preventDefault();
+        self.objEdit.popupSave.btnOk.trigger('click');
+      });
+
+      self.objEdit.popupSave.btnCancel.click(() => {
+        popSave.webuiPopover('hide');
+      });
+
+      self.objEdit.popupSave.btnOk.click(() => {
+        const title = self.objEdit.popupSave.txtLayoutName.val().trim();
+        if (!title) return;
+
+        const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
+        self.objEdit.layoutsEdit[index].title = title;
+        self.objEdit.ddlLayoutEdit.find('option').eq(index).text(title);
+
         if (onSaveLayout) {
           onSaveLayout(self.objEdit.layoutsEdit[index], (id) => {
             self.objEdit.layoutsEdit[index].id = id;
             self.objEdit.ddlLayoutEdit.trigger('change');
+            popSave.webuiPopover('hide');
           });
+        } else {
+          self.objEdit.layoutsEdit[index].id = generateUUID();
+          popSave.webuiPopover('hide');
         }
       });
+      // end popover save
 
       self.objEdit.btnDefault.click(() => {
         const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
@@ -1073,7 +1150,7 @@
         const index = self.objEdit.ddlLayoutEdit[0].selectedIndex;
         try {
           await navigator.clipboard.writeText(JSON.stringify(self.objEdit.layoutsEdit[index].columns));
-          console.log('Copied');
+          onCopy && typeof onCopy === 'function' && onCopy(self.objEdit.layoutsEdit[index]);
         } catch (e) {
           console.error('Copy not support');
         }
@@ -1089,7 +1166,12 @@
       for(const layout of self.objEdit.layoutsEdit) {
         self.objEdit.ddlLayoutEdit.append(`<option value="${layout.id}">${layout.title}</option>`);
       }
+
+      self.objEdit.ddlLayoutEdit.val(self.ddl.val());
       self.objEdit.ddlLayoutEdit.trigger('change');
+
+      self.objEdit.tablePreview.setData(self.data);
+      self.objEdit.tablePreview.reload();
     };
 
     return new TableFull();

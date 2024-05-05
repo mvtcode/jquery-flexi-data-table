@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="public/jquery.webui-popover.min.css" />
   <link rel="stylesheet" href="dist/flexi-data-table.css">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" type="text/javascript"></script>
-  <script src="https://unpkg.com/sortablejs-make@1.0.1/Sortable.min.js"></script>
+  <!-- <script src="https://unpkg.com/sortablejs-make@1.0.1/Sortable.min.js"></script> -->
+  <script src="public/Sortable.min.js"></script>
   <script src="public/jquery-sortable.js"></script>
   <script src="public/jquery.webui-popover.min.js"></script>
   <script src="src/libs/index.js"></script>
@@ -25,13 +26,14 @@
 
   <script>
     function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
   </script>
+  
   <script>
     const VfType = {
       DATA: "DATA",
@@ -373,7 +375,40 @@
   </script>
 
   <script>
+    const keyStore = 'flexi-layout';
+
     jQuery(($) => {
+      const cacheData = localStorage.getItem(keyStore) || {};
+      const cacheDefault = `${keyStore}.default`;
+      const cacheLayouts = [];
+      let defaultId = '11111111-1111-1111-1111-111111111111';
+
+      for (let i = 0; i < localStorage.length; i++){
+        if ( localStorage.key(i).indexOf(keyStore) >= 0 ) {
+          const key = localStorage.key(i);
+          const data = localStorage.getItem(key);
+          if (key === cacheDefault) {
+            defaultId = data;
+          } else {
+            cacheLayouts.push(JSON.parse(data));
+          }
+        }
+      }
+
+      const layouts = [{
+        title: 'Mặc định 1',
+        id: '11111111-1111-1111-1111-111111111111',
+        isSystem: true,
+        columns: [{"title": "Mã sinh viên", "fieldCodes": [ "idFun" ] }, { "title": "Họ và tên", "fieldCodes": [ "name", "space", "minus", "space", "detail" ] }, { "title": "Ngành học", "fieldCodes": [ "major", "newline", "gpa2" ] }, { "title": "Khóa học", "fieldCodes": [ "courses2" ] }, { "title": "Địa chỉ", "fieldCodes": [ "districtName", "space", "minus", "space", "provinceName" ] }, { "title": "Giới tính", "fieldCodes": [ "gender2", "newline", "age" ] }, { "title": "Trạng thái", "fieldCodes": [ "star", "space", "status" ] }, { "title": "Actions", "fieldCodes": [ "detail", "space", "vertical", "space", "update", "space", "vertical", "space", "delete", "newline", "chagnegender" ] } ],
+      }, {
+        title: 'Mặc định 2',
+        id: '22222222-2222-2222-2222-222222222222',
+        isSystem: true,
+        columns: [{"title": "Mã sinh viên", "fieldCodes": [ "idFun" ] }, { "title": "Họ và tên", "fieldCodes": [ "name", "space", "minus", "space", "detail" ] }, { "title": "Ngành học", "fieldCodes": [ "major", "newline", "gpa2" ] }, { "title": "Khóa học", "fieldCodes": [ "courses2" ] }, { "title": "Địa chỉ", "fieldCodes": [ "districtName", "space", "minus", "space", "provinceName" ] }, { "title": "Giới tính", "fieldCodes": [ "gender2", "newline", "age" ] }, { "title": "Trạng thái", "fieldCodes": [ "star", "space", "status" ] } ],
+      },
+      ...cacheLayouts,
+    ];
+
       const flexiTableFull = $('#flexi-table-zone').flexiTableFull({
         vfFields,
         actions,
@@ -381,17 +416,8 @@
         tableHeight: 0,
         tableFixed: false,
         data,
-        layouts: [{
-          title: 'Mặc định 1',
-          id: '11111111-1111-1111-1111-111111111111',
-          isSystem: true,
-          columns: [{"title": "Mã sinh viên", "fieldCodes": [ "idFun" ] }, { "title": "Họ và tên", "fieldCodes": [ "name", "space", "minus", "space", "detail" ] }, { "title": "Ngành học", "fieldCodes": [ "major", "newline", "gpa2" ] }, { "title": "Khóa học", "fieldCodes": [ "courses2" ] }, { "title": "Địa chỉ", "fieldCodes": [ "districtName", "space", "minus", "space", "provinceName" ] }, { "title": "Giới tính", "fieldCodes": [ "gender2", "newline", "age" ] }, { "title": "Trạng thái", "fieldCodes": [ "star", "space", "status" ] }, { "title": "Actions", "fieldCodes": [ "detail", "space", "vertical", "space", "update", "space", "vertical", "space", "delete", "newline", "chagnegender" ] } ],
-        },{
-          title: 'Mặc định 2',
-          id: '22222222-2222-2222-2222-222222222222',
-          isSystem: true,
-          columns: [{"title": "Mã sinh viên", "fieldCodes": [ "idFun" ] }, { "title": "Họ và tên", "fieldCodes": [ "name", "space", "minus", "space", "detail" ] }, { "title": "Ngành học", "fieldCodes": [ "major", "newline", "gpa2" ] }, { "title": "Khóa học", "fieldCodes": [ "courses2" ] }, { "title": "Địa chỉ", "fieldCodes": [ "districtName", "space", "minus", "space", "provinceName" ] }, { "title": "Giới tính", "fieldCodes": [ "gender2", "newline", "age" ] }, { "title": "Trạng thái", "fieldCodes": [ "star", "space", "status" ] } ],
-        }],
+        layouts,
+        defaultId,
         isShowLayout: true,
         isShowOption: true,
 
@@ -399,15 +425,34 @@
           console.log(`Event: ${action} | index: ${index} | id: ${row.id}`);
         },
         onDeleteLayout: ((layout, cb) => {
-          console.log(layout);
+          if (layout.isSystem) return;
+          const id = layout.id;
+          localStorage.removeItem(`${keyStore}.${id}`);
+          const index = layouts.findIndex(_layout => _layout.id === layout.id);
+          layouts.splice(index, 1);
+          flexiTableFull.setLayouts(layouts);
           cb();
         }),
         onSaveLayout: ((layout, cb) => {
-          console.log(layout);
-          cb(generateUUID());
+          if (layout.isSystem) return;
+          if (layout.id) {
+            const index = layouts.findIndex(_layout => _layout.id === layout.id);
+            index >= 0 && (layouts[index] = layout);
+          } else {
+            layout.id = generateUUID();
+            layouts.push(layout);
+          }
+          flexiTableFull.setLayouts(layouts);
+          localStorage.setItem(`${keyStore}.${layout.id}`, JSON.stringify(layout));
+          flexiTableFull.changeLayout(layout.id);
+          cb(layout.id);
         }),
         onSetDefaultLayout: (layout => {
-          console.log(layout);
+          localStorage.setItem(cacheDefault, layout.id);
+          alert('Sét mặc định thành công');
+        }),
+        onCopy: (layout => {
+          alert('Copy thành công');
         }),
       });
     });

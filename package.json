@@ -1,6 +1,6 @@
 {
   "name": "jquery-flexi-data-table",
-  "version": "0.0.1",
+  "version": "0.2.0-jquery",
   "description": "flexi data table for jquery",
   "main": "index.js",
   "scripts": {
